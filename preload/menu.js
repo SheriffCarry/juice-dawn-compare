@@ -44,6 +44,7 @@ class Menu {
     this.setVersion();
     this.setUser();
     this.setKeybind();
+    this.dragMenu();
     this.setTheme();
     this.handleKeyEvents();
     this.initMenu();
@@ -54,6 +55,7 @@ class Menu {
     this.handleDropdowns();
     this.handleSearch();
     this.handleButtons();
+
     this.localStorage.getItem("juice-menu-tab")
       ? this.handleTabChange(
           this.menu.querySelector(
@@ -91,6 +93,101 @@ class Menu {
         this.localStorage.getItem("juice-menu")
       );
     }
+  }
+
+  dragMenu() {
+    const menu = document.querySelector(".menu");
+    const titlebar = menu.querySelector(".menu-titlebar");
+
+    let isDragging = false;
+    let startMouseX = 0;
+    let startMouseY = 0;
+    let startMenuX = 0;
+    let startMenuY = 0;
+    let savedTransition = "";
+
+    function setMenuPosition(x, y) {
+      menu.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    }
+
+    function getMenuPosition() {
+      const transform = getComputedStyle(menu).transform;
+      if (transform && transform !== "none") {
+        const values = transform.match(/matrix.*\((.+)\)/)[1].split(",");
+        return {
+          x: parseFloat(values[4]) || 0,
+          y: parseFloat(values[5]) || 0
+        };
+      }
+      return { x: 0, y: 0 };
+    }
+
+    function centerMenu() {
+      const x = 0 - menu.offsetWidth / 2;
+      const y = 0 - menu.offsetHeight / 2;
+      console.log('Centering menu at:', x, y);
+      setMenuPosition(x, y);
+    }
+
+    window.addEventListener("load", () => {
+      const savedPos = localStorage.getItem("menu-position");
+      if (savedPos) {
+        try {
+          const { x, y } = JSON.parse(savedPos);
+          setMenuPosition(x, y);
+        } catch {
+          centerMenu();
+        }
+      } else {
+        centerMenu();
+      }
+    });
+
+    titlebar.addEventListener("mousedown", (e) => {
+      isDragging = true;
+
+      savedTransition = menu.style.transition;
+      menu.style.transition = "none";
+
+      const pos = getMenuPosition();
+      startMenuX = pos.x;
+      startMenuY = pos.y;
+
+      startMouseX = e.clientX;
+      startMouseY = e.clientY;
+
+      document.body.style.userSelect = "none";
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+
+      const dx = e.clientX - startMouseX;
+      const dy = e.clientY - startMouseY;
+
+      setMenuPosition(startMenuX + dx, startMenuY + dy);
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (isDragging) {
+        const pos = getMenuPosition();
+        localStorage.setItem("menu-position", JSON.stringify(pos));
+      }
+      isDragging = false;
+
+      menu.style.transition = savedTransition;
+
+      document.body.style.userSelect = "";
+    });
+
+    window.addEventListener("resize", () => {
+      const pos = getMenuPosition();
+      const maxX = window.innerWidth - menu.offsetWidth;
+      const maxY = window.innerHeight - menu.offsetHeight;
+      if (pos.x > maxX || pos.y > maxY || pos.x < -menu.offsetWidth || pos.y < -menu.offsetHeight) {
+        centerMenu();
+      }
+    });
   }
 
   setTheme() {
@@ -280,6 +377,16 @@ class Menu {
     const openScriptsFolder = this.menu.querySelector("#open-scripts-folder");
     openScriptsFolder.addEventListener("click", () => {
       ipcRenderer.send("open-scripts-folder");
+    });
+
+    const openSkinsFolder = this.menu.querySelector("#open-skins-folder");
+    openSkinsFolder.addEventListener("click", () => {
+      ipcRenderer.send("open-skins-folder");
+    });
+
+    const openSoundsFolder = this.menu.querySelector("#open-sounds-folder");
+    openSoundsFolder.addEventListener("click", () => {
+      ipcRenderer.send("open-sounds-folder");
     });
 
     const importSettings = this.menu.querySelector("#import-settings");

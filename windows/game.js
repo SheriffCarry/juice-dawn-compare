@@ -5,7 +5,9 @@ const { applySwitches } = require("../util/switches");
 const DiscordRPC = require("../addons/rpc");
 const path = require("path");
 const Store = require("electron-store");
-const fs = require("fs");
+const fs = require("fs-extra");
+const ffmpeg = require("fluent-ffmpeg");
+let ffmpegPath = require("ffmpeg-static");
 
 const store = new Store();
 if (!store.has("settings")) {
@@ -41,7 +43,7 @@ ipcMain.on("update-setting", (e, key, value) => {
 ipcMain.on("open-swapper-folder", () => {
   const swapperPath = path.join(
     app.getPath("documents"),
-    "JuiceClient/swapper/assets"
+    "DawnClient/swapper/assets"
   );
 
   if (!fs.existsSync(swapperPath)) {
@@ -55,7 +57,7 @@ ipcMain.on("open-swapper-folder", () => {
 ipcMain.on("open-scripts-folder", () => {
   const scriptsPath = path.join(
     app.getPath("documents"),
-    "JuiceClient/scripts"
+    "DawnClient/scripts"
   );
 
   if (!fs.existsSync(scriptsPath)) {
@@ -66,21 +68,98 @@ ipcMain.on("open-scripts-folder", () => {
   }
 });
 
+ipcMain.on("open-skins-folder", () => {
+  const skinsPath = path.join(
+    app.getPath("documents"),
+    "DawnClient/swapper/assets/img"
+  );
+  
+  if (!fs.existsSync(skinsPath)) {
+    fs.mkdirSync(skinsPath, { recursive: true });
+    shell.openPath(skinsPath);
+  } else {
+    shell.openPath(skinsPath);
+  }
+});
+
+ipcMain.on("open-sounds-folder", () => {
+  const soundsPath = path.join(
+    app.getPath("documents"),
+    "DawnClient/swapper/assets/media"
+  );
+
+  if (!fs.existsSync(soundsPath)) {
+    fs.mkdirSync(soundsPath, { recursive: true });
+    shell.openPath(soundsPath);
+  } else {
+    shell.openPath(soundsPath);
+  }
+});
+
 ipcMain.on("reset-juice-settings", () => {
   store.set("settings", default_settings);
   app.relaunch();
   app.quit();
 });
 
-let gameWindow;
+ipcMain.on("save-skin-local", (event, skinname, filePath) => {
+  const skinsFolder = path.join(app.getPath("documents"), "DawnClient/swapper/assets/img");
+  if (!fs.existsSync(skinsFolder)) fs.mkdirSync(skinsFolder, { recursive: true });
+
+  const fileBuffer = fs.readFileSync(filePath);
+  const savePath = path.join(skinsFolder, skinname);
+  fs.writeFileSync(savePath, fileBuffer);
+});
+
+ipcMain.on("save-skin-from-buffer", (event, skinname, buffer) => {
+  const skinsFolder = path.join(app.getPath("documents"), "DawnClient/swapper/assets/img");
+  if (!fs.existsSync(skinsFolder)) fs.mkdirSync(skinsFolder, { recursive: true });
+
+  const savePath = path.join(skinsFolder, skinname);
+  fs.writeFileSync(savePath, buffer);
+});
+
+if (ffmpegPath.includes("app.asar")) {
+  ffmpegPath = ffmpegPath.replace(
+    "app.asar",
+    "app.asar.unpacked"
+  );
+}
+
+ffmpeg.setFfmpegPath(ffmpegPath);
+
+ipcMain.on("save-sound", (event, soundname, filePath, volume) => {
+  try {
+    const soundsFolder = path.join(app.getPath("documents"), "DawnClient/swapper/assets/media");
+    if (!fs.existsSync(soundsFolder)) {
+      fs.mkdirSync(soundsFolder, { recursive: true });
+    }
+
+    const inputPath = path.resolve(filePath);
+    const savePath = path.join(soundsFolder, soundname);
+
+    ffmpeg(inputPath)
+      .setFfmpegPath(ffmpegPath)
+      .audioFilters(`volume=${volume}`)
+      .output(savePath)
+      .on("end", () => event.reply("save-sound-success"))
+      .on("error", (err) => {
+        console.error("FFmpeg error:", err);
+        event.reply("save-sound-error", err.message);
+      })
+      .run();
+    } catch (err) {
+    event.reply("save-sound-error", err.message);
+  }
+});
 
 applySwitches(settings);
 
 const createWindow = () => {
   gameWindow = new BrowserWindow({
     fullscreen: settings.auto_fullscreen,
-    icon: path.join(__dirname, "../assets/img/icon.png"),
-    title: "Juice Client",
+    icon: path.join(__dirname, "../assets/img/icon.ico"),
+    title: "Dawn Client",
     width: 1280,
     height: 720,
     show: false,
@@ -95,7 +174,7 @@ const createWindow = () => {
 
   const scriptsPath = path.join(
     app.getPath("documents"),
-    "JuiceClient",
+    "DawnClient",
     "scripts"
   );
   if (!fs.existsSync(scriptsPath)) {
@@ -153,7 +232,7 @@ const createWindow = () => {
 
   gameWindow.loadURL(settings.base_url);
   gameWindow.webContents.setUserAgent(
-    `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.7103.116 Safari/537.36 Electron/10.4.7 JuiceClient/${app.getVersion()}`
+    `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.7103.116 Safari/537.36 Electron/10.4.7 DawnClient/${app.getVersion()}`
   );
   gameWindow.removeMenu();
   gameWindow.maximize();
