@@ -1,8 +1,6 @@
 {
   "default_settings": {
     "perm_crosshair": true,
-    "perm_tablist": false,
-    "perm_chat": false,
     "hitmarker_link": "",
     "killicon_link": "",
     "ui_animations": true,
@@ -14,12 +12,8 @@
     "interface_bounds": "2",
     "kd_indicator": false,
     "rave_mode": false,
-    "spectate_button": true,
-    "click_to_accept": false,
     "customizations": true,
     "unlimited_fps": false,
-    "limit_fps": false,
-    "fps_limit": 60,
     "auto_fullscreen": true,
     "discord_rpc": true,
     "css_link": "",

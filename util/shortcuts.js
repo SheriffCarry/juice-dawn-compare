@@ -2,6 +2,7 @@ const { app, clipboard, screen } = require("electron");
 const shortcut = require("electron-localshortcut");
 const Store = require("electron-store");
 const store = new Store();
+const { initResourceSwapper } = require("../addons/swapper");
 
 const registerShortcuts = (window) => {
   const register = (key, action) => shortcut.register(window, key, action);

@@ -7,8 +7,8 @@ autoUpdater.autoDownload = true;
 
 autoUpdater.setFeedURL({
   provider: "github",
-  owner: "zVipexx",
-  repo: "dawn-client",
+  owner: "irrvlo",
+  repo: "juice-client",
 });
 
 let splashWindow;
@@ -16,17 +16,14 @@ let splashWindow;
 const createWindow = () => {
   splashWindow = new BrowserWindow({
     icon: path.join(__dirname, "../assets/img/icon.png"),
-    width: 500,
-    height: 500,
+    width: 600,
+    height: 300,
+    show: false,
     frame: false,
     transparent: true,
-    alwaysOnTop: true,
+    fullscreenable: false,
     resizable: false,
-    show: false,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-    },
+    fullscreenable: false,
     webPreferences: {
       preload: path.join(__dirname, "../preload/splash.js"),
     },
@@ -35,7 +32,6 @@ const createWindow = () => {
   splashWindow.loadFile(path.join(__dirname, "../assets/html/splash.html"));
   splashWindow.once("ready-to-show", () => {
     splashWindow.show();
-    splashWindow.webContents.send("splash-ready");
     app.isPackaged ? checkForUpdates() : handleClose();
   });
 
@@ -46,7 +42,7 @@ const createWindow = () => {
 };
 
 ipcMain.on("quit-and-install", () =>
-  autoUpdater.quitAndInstall()
+  setTimeout(() => autoUpdater.quitAndInstall(), 5000)
 );
 
 const checkForUpdates = () => {
@@ -57,15 +53,14 @@ const checkForUpdates = () => {
     splashWindow.webContents.send("update-not-available");
     handleClose();
   });
-  autoUpdater.on("update-downloaded", () => {
-    splashWindow.webContents.send("update-downloaded");
-    console.log("Update downloaded");
-  });
+  autoUpdater.on("update-downloaded", () =>
+    splashWindow.webContents.send("update-downloaded")
+  );
   autoUpdater.on("download-progress", (progress) =>
     splashWindow.webContents.send("download-progress", progress)
   );
-  autoUpdater.on("error", (err) => {
-    splashWindow.webContents.send("update-error", err.message);
+  autoUpdater.on("error", ({ message }) => {
+    splashWindow.webContents.send("update-error", message);
     handleClose();
   });
   autoUpdater.checkForUpdates().catch(handleClose);
@@ -77,7 +72,7 @@ const handleClose = () =>
       initGame();
       splashWindow.close();
     }
-  }, 5000);
+  }, 2000);
 
 const initSplash = createWindow;
 

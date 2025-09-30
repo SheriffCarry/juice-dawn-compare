@@ -3,7 +3,7 @@ const { version } = require("../../package.json");
 
 class DiscordRPC {
   constructor() {
-    this.clientId = "1384959605712355479";
+    this.clientId = "1233829658345078846";
     this.startTimestamp = Date.now();
     this.client = new rpc.Client({ transport: "ipc" });
     this.init();
@@ -33,12 +33,12 @@ class DiscordRPC {
     return {
       startTimestamp: this.startTimestamp,
       state: "In the lobby",
-      largeImageKey: "dawn",
-      largeImageText: `Dawn Client v${version}`,
+      largeImageKey: "juice",
+      largeImageText: `Juice Client v${version}`,
       instance: false,
       buttons: [
-        { label: "Discord", url: "https://discord.gg/VsMEQ3HWs2" },
-        { label: "Download", url: "https://github.com/zVipexx/dawn-client" },
+        { label: "Download", url: "https://juice.irrvlo.xyz" },
+        { label: "Discord", url: "https://discord.gg/FjzAAdSjng" },
       ],
     };
   }

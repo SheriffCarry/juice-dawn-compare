@@ -1,6 +1,5 @@
 const Menu = require("./menu");
 const { opener } = require("../addons/opener");
-const { editResourceSwapper } = require("../addons/swappermenu");
 const { customReqScripts } = require("../addons/customReqScripts");
 const { ipcRenderer } = require("electron");
 const fs = require("fs");
@@ -17,7 +16,6 @@ if (!window.location.href.startsWith(base_url)) {
   delete window.require;
   return;
 } else {
-  // Load user scripts
   scripts.forEach((script) => {
     if (!script.endsWith(".js")) return;
     const scriptPath = path.join(scriptsPath, script);
@@ -29,19 +27,32 @@ if (!window.location.href.startsWith(base_url)) {
   });
 }
 
+const originalConsole = {
+  log: console.log.bind(console),
+  warn: console.warn.bind(console),
+  error: console.error.bind(console),
+  info: console.info.bind(console),
+  trace: console.trace.bind(console),
+};
+
 document.addEventListener("DOMContentLoaded", async () => {
+  console.log = originalConsole.log;
+  console.warn = originalConsole.warn;
+  console.error = originalConsole.error;
+  console.info = originalConsole.info;
+  console.trace = originalConsole.trace;
+
   const menu = new Menu();
   menu.init();
 
   opener();
   customReqScripts(settings);
-  editResourceSwapper();
 
   const fetchAll = async () => {
     const [customizations, user] = await Promise.all([
-      fetch(
-        "https://raw.githubusercontent.com/zVipexx/dawn-client/refs/heads/main/badges.json"
-      ).then((r) => r.json()),
+      fetch("https://juice-api.irrvlo.xyz/api/customizations").then((r) =>
+        r.json(),
+      ),
       fetch(`https://api.kirka.io/api/user`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -51,11 +62,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     localStorage.setItem(
       "juice-customizations",
-      JSON.stringify(customizations)
+      JSON.stringify(customizations),
     );
     localStorage.setItem(
       "current-user",
-      JSON.stringify(user.statusCode === 401 ? "" : user)
+      JSON.stringify(user.statusCode === 401 ? "" : user),
     );
   };
   fetchAll();
@@ -79,7 +90,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.addEventListener("juice-settings-changed", ({ detail }) => {
       if (detail.setting === "menu_keybind") {
         const keybindReminder = document.querySelector(
-          "#juice-keybind-reminder"
+          "#juice-keybind-reminder",
         );
         if (keybindReminder)
           keybindReminder.innerText = `Press ${detail.value} to open the client menu.`;
@@ -98,9 +109,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!general_news && !promotional_news && !event_news && !alert_news)
       return;
 
-    let news = await fetch(
-      "https://raw.githubusercontent.com/zVipexx/dawn-client/refs/heads/main/news.json"
-    ).then((r) => r.json());
+    let news = await fetch("https://juice-api.irrvlo.xyz/api/news").then((r) =>
+      r.json(),
+    );
     if (!news.length) return;
 
     news = news.filter(({ category }) => {
@@ -230,7 +241,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           else
             window.open(
               newsItem.link.replace("https://kirka.io/", base_url),
-              "_blank"
+              "_blank",
             );
         }
       };
@@ -248,13 +259,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       "card-cont soc-group transfer-list-top-enter transfer-list-top-enter-active";
     discordBtn.id = "juice-discord-btn";
     discordBtn.style = `
-    background: radial-gradient(circle at 75%, #FFCA8A 0%, rgba(255, 123, 0, 1) 33%) !important;
-    border-bottom-color: rgba(255, 100, 0, 1) !important;
-    border-top-color: rgba(252, 167, 69, 1) !important;
-    border-right-color: rgba(115, 63, 0, 1) !important;
-    border-radius: 0 0 2px 5px !important;`;
+    background: linear-gradient(to top, rgba(255,147,45,.75), rgba(172,250,112,.75)) !important;
+    border-bottom-color: #c47022 !important;
+    border-top-color: #c5ff99 !important;
+    border-right-color: #e48329 !important;`;
     const textDivs = discordBtn.querySelector(".text-soc").children;
-    textDivs[0].innerText = "DAWN";
+    textDivs[0].innerText = "JUICE";
     textDivs[1].innerText = "DISCORD";
 
     const i = document.createElement("i");
@@ -266,7 +276,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     discordBtn.querySelector("svg").replaceWith(i);
 
     discordBtn.onclick = () => {
-      window.open("https://discord.gg/VsMEQ3HWs2", "_blank");
+      window.open("https://discord.gg/FjzAAdSjng", "_blank");
     };
 
     btn.replaceWith(discordBtn);
@@ -321,88 +331,57 @@ document.addEventListener("DOMContentLoaded", async () => {
       const settings = ipcRenderer.sendSync("get-settings");
       const styles = [];
 
-      if (settings.perm_tablist)
-        styles.push(
-          ".tab-info, .tab-team-info { display: flex !important; border-radius: 0.5rem !important; max-width: 30rem !important; top: 0 !important; right: 0 !important; position: absolute; margin: 0.5rem !important; padding: 0.15rem !important; width: 35rem !important; }",
-          ".tab-team-info .players-cont { flex-direction: column !important; }",
-          ".tab-info .player-list, .tab-team-info .player-list { margin: unset !important; gap: 0.25rem; }",
-          ".tab-info > .head, .tab-team-info > .head { display: none; }",
-          '.tab-team-info .player-list:nth-child(1)::before { content: "RED"; width: 100%; text-align: left; padding: 0.25rem 0.5rem; font-size: 1.25rem; background-color: #ff4d42; border-radius: 0.25rem; box-sizing: border-box; }',
-          '.tab-team-info .player-list:nth-child(2)::before { content: "BLUE"; width: 100%; text-align: left; padding: 0.25rem 0.5rem; font-size: 1.25rem; background-color: #0d6dc6; border-radius: 0.25rem; box-sizing: border-box; margin-top: 0.5rem; }',
-          ".players-wrap .list { display: none !important; }",
-          ".tab-info .list, .tab-team-info .player-list > .list { order: 999; }",
-          ".tab-info .players-wrap, .tab-team-info .players-wrap { padding: 0.25rem; }",
-          ".tab-info .player-cont, .tab-team-info .player-cont { margin: unset; }",
-          ".kill-bar-cont { right: 37.5rem !important; }",
-          ".tab-info { background: #141414a3 !important; border-radius: 0.25rem !important; max-width: 35rem !important; }",
-          ".tab-info .head { background: linear-gradient(90deg, #ff932d, transparent) !important; border: unset; font-style: normal; border-top-left-radius: 0.25rem; }",
-          ".tab-info .head .server-id { display: none; }",
-          ".tab-info .list-value { color: #acfa70; }",
-          ".tab-team-info { background: #141414a3 !important; border-radius: 0.25rem !important; max-width: 60rem !important; }",
-          ".tab-team-info .head { background: transparent !important; }",
-          ".tab-team-info .label.red { border-top-left-radius: 0.25rem; background: linear-gradient(90deg, #ff4c4c, #141414a3); justify-content: flex-start; padding-left: 0.75rem; }",
-          ".tab-team-info .label.blue { border-top-right-radius: 0.25rem; background: linear-gradient(-90deg, #4476ff, #141414a3); justify-content: flex-end; padding-right: 0.75rem; }",
-          ".player-list .list-value { color: #acfa70; }",
-          ".player-list .player-cont { background: #141414a3 !important; border-radius: 0.25rem; padding: 0.25rem; }",
-          ".player-cont .nickname.bolder { color: #edb846; }"
-        );
       if (settings.perm_crosshair)
         styles.push(
-          ".crosshair-static { opacity: 1 !important; visibility: visible !important; display: block !important; }"
-        );
-      if (settings.perm_chat)
-        styles.push(
-          ".desktop-game-interface > #bottom-left > .chat { display: flex !important; visibility: visible !important; opacity: 1 !important; }"
+          ".crosshair-static { opacity: 1 !important; visibility: visible !important; display: block !important; }",
         );
       if (settings.hide_chat)
         styles.push(
-          ".desktop-game-interface > #bottom-left > .chat { display: none !important; }"
+          ".desktop-game-interface > #bottom-left > .chat { display: none !important; }",
         );
       if (settings.hide_interface)
         styles.push(
-          ".desktop-game-interface, .crosshair-cont, .ach-cont, .hitme-cont, .sniper-mwNMW-cont, .team-score, .score { display: none !important; }"
+          ".desktop-game-interface, .crosshair-cont, .ach-cont, .hitme-cont, .sniper-mwNMW-cont, .team-score, .score { display: none !important; }",
         );
       if (settings.skip_loading)
         styles.push(".loading-scene { display: none !important; }");
       if (settings.interface_opacity)
         styles.push(
-          `.desktop-game-interface { opacity: ${settings.interface_opacity}% !important; }`
+          `.desktop-game-interface { opacity: ${settings.interface_opacity}% !important; }`,
         );
       if (settings.interface_bounds) {
         let scale =
           settings.interface_bounds === "1"
             ? 0.9
             : settings.interface_bounds === "0"
-            ? 0.8
-            : 1;
+              ? 0.8
+              : 1;
         styles.push(
-          `.desktop-game-interface { transform: scale(${scale}) !important; }`
+          `.desktop-game-interface { transform: scale(${scale}) !important; }`,
         );
       }
       if (settings.hitmarker_link !== "")
         styles.push(
           `.hitmark { content: url(${formatLink(
-            settings.hitmarker_link
-          )}) !important; }`
+            settings.hitmarker_link,
+          )}) !important; }`,
         );
       if (settings.killicon_link !== "")
         styles.push(`.animate-cont::before { content: ""; 
       background: url(${formatLink(
-        settings.killicon_link
+        settings.killicon_link,
       )}); width: 10rem; height: 10rem; margin-bottom: 2rem; display: inline-block; background-position: center; background-size: contain; background-repeat: no-repeat; }
       .animate-cont svg { display: none; }`);
       if (!settings.ui_animations)
         styles.push(
-          "* { transition: none !important; animation: none !important; }"
+          "* { transition: none !important; animation: none !important; }",
         );
       if (settings.rave_mode)
         styles.push(
-          "canvas { animation: rotateHue 1s linear infinite !important; }"
+          "canvas { animation: rotateHue 1s linear infinite !important; }",
         );
       if (!settings.lobby_keybind_reminder)
         styles.push("#juice-keybind-reminder { display: none; }");
-      if (!settings.spectate_button)
-        styles.push(".spectate-eye { display: none !important; }");
 
       addedStyles.innerHTML = styles.join("");
     };
@@ -410,8 +389,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.addEventListener("juice-settings-changed", (e) => {
       const relevantSettings = [
         "perm_crosshair",
-        "perm_tablist",
-        "perm_chat",
         "hide_chat",
         "hide_interface",
         "skip_loading",
@@ -420,7 +397,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         "hitmarker_link",
         "ui_animations",
         "rave_mode",
-        "spectate_button",
         "lobby_keybind_reminder",
       ];
       if (relevantSettings.includes(e.detail.setting)) updateUIFeatures();
@@ -436,17 +412,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     juiceDiscordButton();
 
     const customizations = JSON.parse(
-      localStorage.getItem("juice-customizations")
+      localStorage.getItem("juice-customizations"),
     );
     const currentUser = JSON.parse(localStorage.getItem("current-user"));
 
     const applyCustomizations = () => {
       if (customizations?.find((c) => c.shortId === currentUser?.shortId)) {
         const customs = customizations.find(
-          (c) => c.shortId === currentUser.shortId
+          (c) => c.shortId === currentUser.shortId,
         );
         const lobbyNickname = document.querySelector(
-          ".team-section .heads .nickname"
+          ".team-section .heads .nickname",
         );
 
         if (customs.gradient)
@@ -503,7 +479,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const removeCustomizations = () => {
       const lobbyNickname = document.querySelector(
-        ".team-section .heads .nickname"
+        ".team-section .heads .nickname",
       );
       lobbyNickname.style =
         "display: flex; align-items: flex-end; gap: 0.25rem;";
@@ -516,82 +492,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (detail.setting === "customizations")
         detail.value ? applyCustomizations() : removeCustomizations();
     });
-
-    const formatMoney = (money) => {
-      if (!money.dataset.formatted) {
-        const formatted = parseInt(money.innerText).toLocaleString();
-        money.innerHTML = money.innerHTML.replace(money.innerText, formatted);
-        money.dataset.formatted = true;
-      }
-    };
-
-    const formatExpValues = (expValues) => {
-      if (!expValues.dataset.formatted) {
-        const [current, max] = expValues.innerText.split("/");
-        expValues.innerText = `${parseInt(current).toLocaleString()}/${parseInt(
-          max
-        ).toLocaleString()}`;
-        expValues.dataset.formatted = true;
-      }
-    };
-
-    const formatQuests = () => {
-      const quests = document.querySelectorAll(
-        ".right-interface > .quests .quest"
-      );
-
-      quests.forEach((quest) => {
-        const amounts = quest.querySelectorAll(".amount");
-        const progress2 = quest.querySelector(".progress2");
-
-        if (progress2 && !progress2.dataset.formatted) {
-          const [progressAmt, progressMax] = progress2.innerText.split("/");
-          progress2.innerText = `${parseInt(
-            progressAmt
-          ).toLocaleString()}/${parseInt(progressMax).toLocaleString()}`;
-          progress2.dataset.formatted = true;
-        }
-
-        amounts.forEach((amount) => {
-          if (!amount.dataset.formatted) {
-            const formatted = parseInt(
-              amount.innerText.split(" ")[0]
-            ).toLocaleString();
-            amount.innerHTML = amount.innerHTML.replace(
-              amount.innerText.split(" ")[0],
-              formatted
-            );
-            amount.dataset.formatted = true;
-          }
-        });
-      });
-    };
-
-    const interval = setInterval(() => {
-      const moneys = document.querySelectorAll(".moneys > .card-cont");
-      const expValues = document.querySelector(".exp-values");
-      const quests = document.querySelectorAll(
-        ".right-interface > .quests .quest"
-      );
-      const questsTabs = document.querySelector(
-        ".right-interface > .quests .tabs"
-      );
-
-      if (moneys.length && expValues && quests.length && questsTabs) {
-        clearInterval(interval);
-        moneys.forEach(formatMoney);
-        formatExpValues(expValues);
-        formatQuests();
-
-        questsTabs.addEventListener("click", formatQuests);
-      }
-    }, 100);
   };
 
   const handleServers = async () => {
-    const settings = ipcRenderer.sendSync("get-settings");
     const mapImages = await fetch(
-      "https://raw.githubusercontent.com/SheriffCarry/KirkaSkins/main/maps/full_mapimages.json"
+      "https://raw.githubusercontent.com/SheriffCarry/KirkaSkins/main/maps/full_mapimages.json",
     ).then((res) => res.json());
 
     Object.keys(mapImages).forEach((item) => {
@@ -627,7 +532,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           navigator.clipboard.readText().then((text) => {
             window.location.href = `${base_url}profile/${text.replace(
               "#",
-              ""
+              "",
             )}`;
             const username = e.target.innerText.replace(":", "");
             customNotification({
@@ -649,7 +554,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         clearInterval(interval);
 
         const profile = document.querySelector(
-          ".content > .profile-cont > .profile"
+          ".content > .profile-cont > .profile",
         );
         const content = profile.querySelector(".profile > .content");
         const statistics = document.querySelectorAll(".statistic");
@@ -662,7 +567,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (progressExp) {
           const [current, max] = progressExp.innerText.split("/");
           progressExp.innerText = `${parseInt(
-            current
+            current,
           ).toLocaleString()}/${parseInt(max).toLocaleString()}`;
         }
 
@@ -680,7 +585,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
           stat.querySelector(".stat-value").innerText = value.replace(
             value.split(" ")[0],
-            parseInt(value.split(" ")[0]).toLocaleString()
+            parseInt(value.split(" ")[0]).toLocaleString(),
           );
         });
 
@@ -720,7 +625,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           nickname.appendChild(badgesElem);
 
           const customizations = JSON.parse(
-            localStorage.getItem("juice-customizations")
+            localStorage.getItem("juice-customizations"),
           );
 
           if (customizations?.find((c) => c.shortId === shortId)) {
@@ -795,7 +700,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const updateKD = () => {
       const kills = document.querySelector(".kill-death .kill");
       const deaths = document.querySelector(
-        "div > svg.icon-death"
+        "div > svg.icon-death",
       )?.parentElement;
       const kd = document.querySelector(".kill-death .kd");
 
@@ -812,7 +717,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (document.querySelector(".kill-death .kd")) return;
       const kills = document.querySelector(".kill-death .kill");
       const deaths = document.querySelector(
-        "div > svg.icon-death"
+        "div > svg.icon-death",
       )?.parentElement;
       const kd = kills?.cloneNode(true);
 
@@ -837,7 +742,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     const customizations = JSON.parse(
-      localStorage.getItem("juice-customizations")
+      localStorage.getItem("juice-customizations"),
     );
 
     const interval = setInterval(() => {
@@ -847,7 +752,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       const tabplayers = document.querySelectorAll(
-        ".desktop-game-interface .player-cont"
+        ".desktop-game-interface .player-cont",
       );
 
       if (settings.customizations) {
@@ -890,14 +795,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (customs.gradient) {
               nickname.style = `
                   overflow: unset;
-                  background: linear-gradient(${
-                    customs.gradient.rot
-                  }, ${customs.gradient.stops.join(", ")}) !important;
+                  background: linear-gradient(${customs.gradient.rot}, ${customs.gradient.stops.join(", ")}) !important;
                   -webkit-background-clip: text !important;
                   -webkit-text-fill-color: transparent !important;
-                  text-shadow: ${
-                    customs.gradient.shadow || "0 0 0 transparent"
-                  } !important;
+                  text-shadow: ${customs.gradient.shadow || "0 0 0 transparent"} !important;
                   font-weight: 700 !important;
                 `;
             } else {
@@ -946,28 +847,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }, 1000);
   };
 
-  const handleMarket = () => {
-    const interval = setInterval(() => {
-      if (!window.location.href === `${base_url}hub/market`) {
-        clearInterval(interval);
-        return;
-      }
-
-      const subjects = document.querySelectorAll(".subject");
-
-      subjects.forEach((subject) => {
-        const count = subject.querySelector(".count");
-        if (count && !count.dataset.formatted) {
-          count.innerHTML = count.innerHTML.replace(
-            count.innerText,
-            parseInt(count.innerText).toLocaleString()
-          );
-          count.dataset.formatted = true;
-        }
-      });
-    }, 250);
-  };
-
   const handleFriends = () => {
     const settings = ipcRenderer.sendSync("get-settings");
 
@@ -991,7 +870,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const friendsCont = document.querySelector(".friends > .content > .allo");
       const limit = document.querySelector(
-        ".friends > .content > .tabs > .limit"
+        ".friends > .content > .tabs > .limit",
       );
       const addFriends = document.querySelector(".friends > .add-friends");
 
@@ -1101,42 +980,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         denyButton.addEventListener("click", handleDenyButtonClick);
       }
 
-      function addSpectateButton(div) {
-        if (div.nextElementSibling?.classList.contains('spectate-eye')) return;
-
-        const match = div.textContent.match(/\[(.*?)\]/);
-        const code = match ? match[1] : null;
-        if (!code) return;
-
-        const eyeDiv = document.createElement('div');
-        eyeDiv.className = 'spectate-eye';
-        eyeDiv.innerHTML = '<i class="fa-solid fa-eye"></i>';
-        div.insertAdjacentElement('afterend', eyeDiv);
-
-        eyeDiv.addEventListener('click', e => {
-          e.stopPropagation();
-
-          document.querySelector('.home')?.click();
-          document.querySelector('.join-btn')?.click();
-
-          const observer = new MutationObserver(() => {
-            const input = document.querySelector('.input');
-            if (input) {
-              input.value = code;
-              input.dispatchEvent(new Event('input', { bubbles: true }));
-              document.querySelector('.btn:nth-child(2)')?.click();
-              observer.disconnect();
-            }
-          });
-        
-          observer.observe(document.body, { childList: true, subtree: true });
-        });
-      }
-
-      document.querySelectorAll(".online").forEach(div => {
-        if (div.textContent.trim().toLowerCase().includes('in game')) addSpectateButton(div);
-      });
-
       if (!addFriends.querySelector(".search-friends")) createSearch();
       if (!addFriends.querySelector(".deny-requests")) createDenyButton();
 
@@ -1152,7 +995,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       const customizations = JSON.parse(
-        localStorage.getItem("juice-customizations")
+        localStorage.getItem("juice-customizations"),
       );
 
       if (settings.customizations) {
@@ -1281,6 +1124,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   ipcRenderer.on("notification", (_, data) => customNotification(data));
 
   ipcRenderer.on("url-change", (_, url) => {
+    console.log = originalConsole.log;
+    console.warn = originalConsole.warn;
+    console.error = originalConsole.error;
+    console.info = originalConsole.info;
+    console.trace = originalConsole.trace;
     if (url === `${base_url}`) {
       handleLobby();
       handleInGame();
@@ -1309,4 +1157,4 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   handleInitialLoad();
-})();
+});
