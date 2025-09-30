@@ -4,8 +4,8 @@ const fs = require("fs");
 const url = require("url");
 
 const initResourceSwapper = () => {
-  protocol.registerFileProtocol("juiceclient", (request, callback) =>
-    callback({ path: request.url.replace("juiceclient://", "") })
+  protocol.registerFileProtocol("dawnclient", (request, callback) =>
+    callback({ path: request.url.replace("dawnclient://", "") })
   );
   protocol.registerFileProtocol("file", (request, callback) => {
     callback(decodeURIComponent(request.url.replace("file:///", "")));
@@ -13,12 +13,12 @@ const initResourceSwapper = () => {
 
   const SWAP_FOLDER = path.join(
     app.getPath("documents"),
-    "JuiceClient",
+    "DawnClient",
     "swapper"
   );
   const assetsFolder = path.join(SWAP_FOLDER, "assets");
-  const folders = ["css", "media", "img", "glb", "js"];
-  let folder_regex_generator = "JuiceClient[\\\\/]swapper[\\\\/]assets[\\\\/](";
+  const folders = ["css", "img", "media"];
+  let folder_regex_generator = "DawnClient[\\\\/]swapper[\\\\/]assets[\\\\/](";
   folder_regex_generator += folders.join("|");
   folder_regex_generator += ")[\\\\/][^\\\\/]+\\.[^.]+$";
   let folder_regex = new RegExp(folder_regex_generator, "");
@@ -80,7 +80,7 @@ const initResourceSwapper = () => {
       swap.filter,
       (details, callback) => {
         const redirect =
-          "juiceclient://" +
+          "dawnclient://" +
           (swap.files[details.url.replace(/https|http|(\?.*)|(#.*)|\_/gi, "")] ||
             details.url);
         callback({ cancel: false, redirectURL: redirect });
